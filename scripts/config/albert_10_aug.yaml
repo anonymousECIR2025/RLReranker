@@ -1,0 +1,148 @@
+version: albert_10_aug
+run_mode: 1
+run_name: ${version}
+
+directories:
+  base_path: "/mnt/data/shiva"
+  dataset_folder: "/home/msmarco/sigir_encoded_dataset"
+  output_folder: "${directories.base_path}/SIGIR/June30/${run_name}"
+  plot_folder: "${directories.output_folder}/plots_${run_mode}"
+  model_folder: "${directories.output_folder}/models"
+  loss_folder: "${directories.output_folder}/losses"
+
+file_paths:
+  corpus_file_path: "/home/msmarco/collection.tsv"
+  # qrel_file: "/home/msmarco/qrels.dev.tsv"
+  qrel_file: "/home/msmarco/qrels.train.tsv"
+  metadata_file_path: "${directories.output_folder}/metadata_${run_mode}.md"
+
+columns:
+  - qid
+  - doc_id
+  - relevance
+
+model_config_dict:
+  input_dim: ${train_config.run_params.vector_size}
+  output_dim: 1
+  model_size: "large"
+  learning_rate: 0.0001
+  gamma: 0.99
+  epsilon: 0.1
+  epsilon_decay: 0.99
+  features: 
+
+constants:
+  seed: 0
+  window: 20
+  normalized: False
+# --------------
+train_config:
+  run_mode: "${run_mode}"
+  stage: "TRAIN"  
+  window: ${constants.window}
+  model_config_dict: "${model_config_dict}"
+  run_params:
+    epochs: 200001
+    top_docs_count: 20
+    buffer_qid: 10
+    vector_size: 768
+    max_row: 100
+    columns: "${columns}"
+    normalized: ${constants.normalized}
+  reward_params: 
+    reward_mode: relevance
+    relevance_coef: 1
+    bias_coef: 0
+    nfair_coef: 0
+
+
+  output_folder: ${directories.output_folder}
+  plot_folder: ${directories.plot_folder}
+  corpus_file_path: "${file_paths.corpus_file_path}"
+  qrel_file: "${file_paths.qrel_file}"
+  train_queries_path: "/home/msmarco/queries.train.tsv"
+  metadata_file_path: "${file_paths.metadata_file_path}"
+  model_path: "${directories.model_folder}/model.pth" 
+  bert_model_path: "/home/LLaMA_Debiasing/BiEncoder/output/bi-encoder_margin-mse_bert-base-uncased"
+  cross_encoder_path: "/home/LLaMA_Debiasing/CrossEncoder/output/cross-encoder_bert-base-uncased"
+
+  qid_train_list_path: "${directories.output_folder}/train_qid_list.txt"
+  train_set_path: "${directories.dataset_folder}/train_ce_albert-base-v2_2000_pretrained_aug.csv"
+  train_df_path: "${directories.dataset_folder}/train_ce_albert-base-v2_2000_pretrained_aug.csv"
+
+  train_losses_path: "${directories.loss_folder}/TrainLosses.txt"
+  train_loss_plot_path: "${directories.plot_folder}/TrainingLoss.png"
+  train_loss_log10_plot_path: "${directories.plot_folder}/TrainingLossLog10.png"
+  train_QValues_plot_path: "${directories.plot_folder}/QValues.png"
+  train_QValues_log10_plot_path: "${directories.plot_folder}/QValues_log10.png"
+# --------------
+eval_config:
+  run_mode: "${run_mode}"
+  stage: "EVAL"
+  model_config_dict: "${model_config_dict}"
+  run_params:
+    vector_size: "${train_config.run_params.vector_size}"
+    top_docs_count: "${train_config.run_params.top_docs_count}"
+    epochs: "${train_config.run_params.epochs}"
+    columns: "${columns}"
+    max_row: 50000
+    normalized: ${constants.normalized}
+
+  output_folder: ${directories.output_folder}
+  corpus_file_path: "${file_paths.corpus_file_path}"
+  qrel_file: "${file_paths.qrel_file}"
+
+  plot_folder: ${directories.plot_folder}
+  test_queries_path: "/home/msmarco/neutral_queries.tsv"
+  metadata_file_path: "${file_paths.metadata_file_path}"
+  pretrained_model_path: "${train_config.model_path}"
+  bert_model_path: "${train_config.bert_model_path}"
+  cross_encoder_path: ${train_config.cross_encoder_path}
+
+  train_eval_trec_path: "${directories.output_folder}/train_eval_trec"
+  train_eval_output_path: "${directories.output_folder}/train_eval_output_${run_mode}"
+  train_test_set_path: ${train_config.train_set_path}
+  train_test_df_path: ${train_config.train_df_path}
+  train_qrel_file: "/home/msmarco/qrels.train.tsv"
+
+  neutral_eval_trec_path: "${directories.output_folder}/neutral_eval_trec"
+  neutral_eval_output_path: "${directories.output_folder}/neutral_eval_output_${run_mode}"
+  neutral_test_set_path: "/home/msmarco/encoded_dataset/neutral_ce_bert-base-uncased_pretrained.csv"
+  neutral_test_df_path: "/home/msmarco/encoded_dataset/neutral_ce_bert-base-uncased_pretrained.csv"
+  neutral_qrel_file: "/home/msmarco/qrels.dev.tsv"
+
+  social_eval_trec_path: "${directories.output_folder}/social_eval_trec"
+  social_eval_output_path: "${directories.output_folder}/social_eval_output_${run_mode}.txt"
+  social_test_set_path: "/home/msmarco/encoded_dataset/social_neutral_ce_bert-base-uncased_pretrained.csv"
+  social_test_df_path: "/home/msmarco/encoded_dataset/social_neutral_ce_bert-base-uncased_pretrained.csv"
+  social_qrel_file: "/home/msmarco/qrels.dev.tsv"
+
+  eval_dev_trec_path: "${directories.output_folder}/eval_dev_trec"
+  eval_dev_output_path: "${directories.output_folder}/eval_dev_output_${run_mode}.txt"
+  dev_test_set_path: /home/msmarco/encoded_dataset/dev_ce_bert-base-uncased_pretrained.csv
+  dev_test_df_path: /home/msmarco/encoded_dataset/dev_ce_bert-base-uncased_pretrained.csv
+  dev_qrel_file: "/home/msmarco/qrels.dev.tsv"
+
+  eval_dev50_trec_path: "${directories.output_folder}/eval_dev50_trec"
+  eval_dev50_output_path: "${directories.output_folder}/eval_dev50_output_${run_mode}.txt"
+  dev50_test_set_path: /home/RL/deep-q-rerank/MAIN_DATA/input/bert_base/dev_ce_bert-base-uncased_50.csv
+  dev50_test_df_path: /home/RL/deep-q-rerank/MAIN_DATA/input/bert_base/dev_ce_bert-base-uncased_50.csv
+  dev50_qrel_file: "/home/msmarco/qrels.dev.tsv"
+
+  dl19_eval_trec_path: "${directories.output_folder}/dl19_eval_trec_${run_mode}"
+  dl19_eval_output_path: "${directories.output_folder}/dl19_eval_output_${run_mode}.txt"
+  dl19_test_set_path: /home/msmarco/sigir_encoded_dataset/trec-dl-2019_ce_albert-base-v2_pretrained.csv
+  dl19_test_df_path: /home/msmarco/sigir_encoded_dataset/trec-dl-2019_ce_albert-base-v2_pretrained.csv
+  dl19_qrel_file: "/home/msmarco/qrels.trec-dl-2019.tsv"
+
+  dl20_eval_trec_path: "${directories.output_folder}/dl20_eval_trec_trec_${run_mode}"
+  dl20_eval_output_path: "${directories.output_folder}/dl20_eval_output_${run_mode}.txt"
+  dl20_test_set_path: /home/msmarco/sigir_encoded_dataset/trec-dl-2020_ce_albert-base-v2_pretrained.csv
+  dl20_test_df_path: /home/msmarco/sigir_encoded_dataset/trec-dl-2020_ce_albert-base-v2_pretrained.csv
+  dl20_qrel_file: "/home/msmarco/qrels.trec-dl-2020.tsv"
+
+  dl_hard_eval_trec_path: "${directories.output_folder}/dl_hard_eval_trec_${run_mode}"
+  dl_hard_eval_output_path: "${directories.output_folder}/dl_hard_eval_output_${run_mode}.txt"
+  dl_hard_test_set_path: /home/msmarco/sigir_encoded_dataset/trec-dl-hard_ce_albert-base-v2_pretrained.csv
+  dl_hard_test_df_path: /home/msmarco/sigir_encoded_dataset/trec-dl-hard_ce_albert-base-v2_pretrained.csv
+  dl_hard_qrel_file: "/home/msmarco/qrels.trec-dl-hard.tsv"
